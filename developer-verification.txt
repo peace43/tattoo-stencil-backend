@@ -1,1 +1,7 @@
+Tattoo Stencil Pro
 
+Developer: Baris Dogan
+
+Official backend repository for the Tattoo Stencil Pro mobile application published on Google Play.
+
+This repository is used to host the backend server for generating tattoo stencil images from uploaded photos.
