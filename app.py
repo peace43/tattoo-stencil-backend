@@ -64,11 +64,11 @@ def upload():
     is_lineart = request.form.get("lineart", "0") == "1"
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Contrast
     gray = apply_contrast(gray, contrast_value)
 
-    # Resize logic from size_cm (affects detail density a bit)
+    # Small quality improvement
+    gray = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+
     scale_map = {
         "8": 0.85,
         "10": 1.0,
@@ -84,13 +84,11 @@ def upload():
             interpolation=cv2.INTER_AREA if scale < 1.0 else cv2.INTER_CUBIC,
         )
 
-    # Optional cleaner line-art mode
     if is_lineart:
         gray = cv2.bilateralFilter(gray, 9, 75, 75)
     else:
         gray = cv2.GaussianBlur(gray, (3, 3), 0)
 
-    # Mode handling
     if mode == "outline":
         edges = cv2.Canny(gray, 50, 150)
         stencil = cv2.bitwise_not(edges)
@@ -99,9 +97,11 @@ def upload():
         _, stencil = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
 
     else:  # full
-        edges = cv2.Canny(gray, 50, 150)
+        edges = cv2.Canny(gray, 40, 130)
         _, binary = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
 
+        kernel = np.ones((2, 2), np.uint8)
+        binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
         edges_inv = cv2.bitwise_not(edges)
         stencil = cv2.bitwise_and(binary, edges_inv)
 
