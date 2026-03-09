@@ -12,12 +12,17 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
+@app.route("/")
+def home():
+    return {"message": "Tattoo stencil backend is running"}
+
+
 @app.route("/health")
 def health():
     return {"status": "running"}
 
 
-@app.route("/outputs/<filename>")
+@app.route("/outputs/<path:filename>")
 def outputs(filename):
     return send_from_directory(OUTPUT_DIR, filename)
 
@@ -26,9 +31,12 @@ def outputs(filename):
 def upload():
 
     if "file" not in request.files:
-        return {"error": "file yok"}, 400
+        return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
 
     uid = str(uuid.uuid4())
 
@@ -39,6 +47,10 @@ def upload():
     file.save(input_path)
 
     img = cv2.imread(input_path)
+
+    if img is None:
+        return jsonify({"error": "Invalid image"}), 400
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     _, stencil = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)
